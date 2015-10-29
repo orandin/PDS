@@ -1,0 +1,7 @@
+# On ignore tout
+[0-9]/*
+
+# Exceptions
+![0-9]/*.c
+![0-9]/*.md
+![0-9]/*.sh
