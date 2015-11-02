@@ -24,56 +24,36 @@ static int opt_cc = 0;
 static int opt_k = 0;
 
 
-int
-valeurRetour(int actual, int newValue) {
-
-	/* -- AND -- */
-	if (conjonction)
-		return actual && newValue;
-	/* -- OR -- */
-	else 
-		return actual || newValue;
-}
-
-
-
-int 
-mdo(int debut, int argc, char *argv[]) {
+int mdo(int debut, int argc, char *argv[]) {
 
 	int status;
 	int retour = 1;
 	int i, pid;
 
-	for (i = debut; i < argc; i++) {
-        char **cmdargv;
-
-        /* création du argv de l'argument i */
-		assert(makeargv(argv[i], " \t", &cmdargv) > 0);
-
-        switch(fork()) {
+	for(i = argc; i >= debut; i--) {
+		switch(fork()) {
 			case -1: 
 				perror("Fork");
 				exit(EXIT_FAILURE);
 				break;
 			case 0:
-				execvp(cmdargv[0], cmdargv);
+				execvp(argv[i], argv + i);
 				perror("Execvp");
 				exit(EXIT_FAILURE);
+
 		}
 
-        freeargv(cmdargv);
-    }
-
+		argv[i] = NULL;
+	}
 
 	while ((pid = wait(&status)) != -1 && i > 0) {
 
 		if (WIFEXITED(status)) {
-			if (WEXITSTATUS(status)) {
-				retour = valeurRetour(retour, 0);
-			}
+			if (WEXITSTATUS(status))
+				retour = 0;
 
 		} else {
-			retour = valeurRetour(retour, 0);
+			retour = 0;
 		}
 
 
@@ -81,14 +61,13 @@ mdo(int debut, int argc, char *argv[]) {
 		i--;
 	}
 
-	return !(retour);
+	return retour;
 }
 
 
-int 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-	int opt;
+	int i, opt;
 	int debut = 1;
 	
 	while((opt = getopt(argc, argv, "ao")) != -1) {
@@ -107,5 +86,35 @@ main(int argc, char *argv[])
 		}
 		debut++;
 	}
-    return mdo(debut, argc, argv);
+
+	for (i=1; i < argc; i++) { /* traiter argv[i] */
+        char **cmdargv;
+        char **arg;
+
+        /* création du argv de l'argument i */
+		assert(makeargv(argv[i], " \t", &cmdargv) > 0);
+
+        /* test: affichage */
+        fprintf(stderr, "[%s]\t%% ", cmdargv[0]);
+        for (arg=cmdargv; *arg; arg++)
+            fprintf(stderr, "%s ", *arg); 
+        fprintf(stderr, "\n");
+
+        freeargv(cmdargv);
+
+
+    }
+
+
+	/* DEBUG */
+
+	fprintf(stderr, "argc = %d\n", argc);
+	
+	for (i = 0; i < argc; i++) {
+		fprintf(stderr, "argv[%d] = %s\n", i, argv[i]);
+	}
+	/* FIN DEBUG */
+
+	mdo(debut, argc, argv);
+	return 0;
 }
