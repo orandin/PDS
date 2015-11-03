@@ -23,7 +23,14 @@ static int conjonction = 1;
 static int opt_cc = 0;
 static int opt_k = 0;
 
-
+/**
+ * \fn int 	valeurRetour(int actual, int newValue)
+ * \brief 	Prototype qui détermine la valeur de retour du programme 
+ * 			en fonction de la valeur précédente.
+ *
+ * \param actual 	Valeur de retour actuelle
+ * \param newValue 	Nouvelle valeur de retour
+ */
 int
 valeurRetour(int actual, int newValue) {
 
@@ -37,13 +44,21 @@ valeurRetour(int actual, int newValue) {
 
 
 
+/**
+ * \fn int 	mdo(int debut, int argc, char *argv[]) 
+ * \brief 	Prototype qui exécute un ensemble de commandes
+ *
+ * \param debut Index définissant la position de départ pour la lecture des arguments
+ * \param argc 	Nombre d'arguments
+ * \param argv 	Arguments
+ */
 int 
 mdo(int debut, int argc, char *argv[]) {
 
 	int status;
-	int retour = 1;
+	int retour = conjonction;
 	int i, pid;
-
+	
 	for (i = debut; i < argc; i++) {
         char **cmdargv;
 
@@ -65,33 +80,47 @@ mdo(int debut, int argc, char *argv[]) {
     }
 
 
+
 	while ((pid = wait(&status)) != -1 && i > 0) {
 
 		if (WIFEXITED(status)) {
-			if (WEXITSTATUS(status)) {
-				retour = valeurRetour(retour, 0);
-			}
-
+			retour = valeurRetour(retour, (WEXITSTATUS(status) == 0));
 		} else {
 			retour = valeurRetour(retour, 0);
 		}
 
+		/*
+		 * Court-circuit
+		 *
+		 * Si l'option est activé, on vérifie que dans le cas d'un :
+		 * OR, la valeur de retour vaut TRUE
+		 * AND, la valeur de retour vaut FALSE
+		 *
+		 * Si les conditions sont remplies, on retourne la valeur
+		 */
+		if (opt_cc && ((!retour && conjonction) || (!conjonction && retour))) {
+			
+			/* Si TRUE, on tue tous les processus du groupe correspondant au pid du père */
+			if (opt_k)
+				killpg(getpid(), SIGUSR1); 
 
-		printf("%d a terminé.\n", pid);
+			return !(retour);
+		}
+
 		i--;
 	}
 
 	return !(retour);
 }
 
-
+/* Main */
 int 
 main(int argc, char *argv[])
 {
 	int opt;
 	int debut = 1;
 	
-	while((opt = getopt(argc, argv, "ao")) != -1) {
+	while((opt = getopt(argc, argv, "aock")) != -1) {
 		switch(opt) {
 			case 'o':
 				conjonction = 0;
