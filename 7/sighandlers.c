@@ -16,8 +16,6 @@
  * wrapper for the sigaction function
  */
 int sigaction_wrapper(int signum, handler_t * handler) {
-    /*printf("sigaction_wrapper : To be implemented\n");*/
-
     struct sigaction siga;
 
     siga.sa_handler = handler;
