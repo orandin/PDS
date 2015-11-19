@@ -6,6 +6,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "cmd.h"
 #include "sighandlers.h"
