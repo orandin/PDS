@@ -137,8 +137,15 @@ void do_stop(char **argv) {
 /* do_kill - Execute the builtin kill command */
 void do_kill(char **argv) {
     struct job_t *job = treat_argv(argv);
+    int a;
     if (job) {
-        kill(-(job->jb_pid), SIGKILL);
+      a = -job->jb_pid;
+      printf("%d\n", a);
+
+        if (kill(a, SIGKILL) < 0) {
+          perror("");
+        }
+        /*kill(-(job->jb_pid), SIGKILL);*/
         jobs_deletejob(job->jb_pid);
     }
 }
