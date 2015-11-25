@@ -73,7 +73,7 @@ void sigint_handler(int sig) {
         printf("sigint_handler: entering\n");
 
     if ((pid = jobs_fgpid()) != 0) {
-        kill(pid, sig);
+        kill(-pid, sig);
         jobs_deletejob(pid);
     }
 
@@ -95,7 +95,7 @@ void sigtstp_handler(int sig) {
         printf("sigtstp_handler: entering\n");
  
     if ((pid = jobs_fgpid()) != 0)
-        kill(pid, sig);
+        kill(-pid, sig);
 
     if (verbose)
         printf("sigtstp_handler: exiting\n");
