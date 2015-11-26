@@ -72,7 +72,6 @@ void do_pipe(char *cmds[MAXCMDS][MAXARGS], int nbcmd, int bg) {
     jobs_addjob(pid, (bg) ? BG : FG, "pipe !!");
 
 
-
     if (!bg) {
         for (i = 0; i < nbcmd; ++i) {
             wait(NULL);
