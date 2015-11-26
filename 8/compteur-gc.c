@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 
     int taille_segment;
 
-    int nbThreads = 0;
+    int nbThreads;
     pthread_t threads;
 
 
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
     assert(clock_gettime(CLOCK_MONOTONIC, &debut) != -1);
     /*cptr = compteur_gc(tampon, taille);*/
 
-     for(i = 0; i < nbThreads; i++) {
+     for(i = 0; i < nbThreads - 1; i++) {
         struct arg_t *args = (struct arg_t *) malloc(sizeof(struct arg_t *)); 
         args->bloc = tampon + i * taille_segment;
         args->taille = taille_segment; /* Sauf pour le dernier */
@@ -85,7 +85,13 @@ int main(int argc, char *argv[]) {
     }
 
     /* Traiter cas du dernier (taille) */
+    cptr = compteur_gc(tampon, (taille - taille_segment * nbThreads));
+    
     /* Faire les join */
+
+    for (i = 0; i <= nbThreads; i++) {
+        pthread_join(threads[i], );
+    }
 
     assert(clock_gettime(CLOCK_MONOTONIC, &fin) != -1);
 
