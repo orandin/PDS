@@ -102,7 +102,7 @@ mdo(int debut, int argc, char *argv[]) {
 			
 			/* Si TRUE, on tue tous les processus du groupe correspondant au pid du père */
 			if (opt_k)
-				killpg(getpid(), SIGUSR1); 
+				killpg(getpid(), SIGINT); 
 
 			return !(retour);
 		}

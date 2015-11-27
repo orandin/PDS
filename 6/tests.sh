@@ -3,7 +3,6 @@
 echo "====== DEBUT DU SCRIPT ========"
 
 echo "Vérification du fonctionnement du do avec les options AND et OR."
-echo "----"
 ./do -o  true  true  || echo "Test 1.1: Erreur (renvoie false)";
 ./do -a  true  true  || echo "Test 1.2: Erreur (renvoie false)";
 
@@ -18,7 +17,6 @@ echo "----"
 
 echo "----------------------"
 echo "Vérification du fonctionnement du do avec l'option -c."
-echo "----"
 # Dans les deux tests suivants, on lance xclock et on redonne la main.
 ./do -o -c xclock true  || echo "Test 2.1: Valeur retour incorrecte"
 ./do -a -c xclock false && echo "Test 2.2: Valeur retour incorrecte"
@@ -29,7 +27,6 @@ echo "----"
 
 echo "----------------------"
 echo "Vérification du fonctionnement du do avec l'option -k."
-echo "----"
 
 # Dans les deux tests suivants, on lance xclock et on redonne la main en tuant xclock
 ./do -o -c -k xclock true  || echo "Test 3.1: Valeur retour incorrecte"
