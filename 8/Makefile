@@ -1,5 +1,9 @@
 CC      = gcc
 CFLAGS  = -Wall -Werror
+TP=8
+NOM1=DELBERGHE
+NOMARCHIVE = TP${TP}_${NOM1}
+
 CFLAGS += -g
 LDFLAGS = -g -pthread
 
@@ -23,5 +27,18 @@ clean:
 
 realclean: clean
 	rm ${BINS} || true
+	rm text || true
+	rm res.* || true
 
-.PHONY: all clean realclean
+test: 
+	./test.sh
+
+archive: realclean
+	mkdir ${NOMARCHIVE} || true
+	cp ./* ${NOMARCHIVE}/ || true
+	tar -zcf ${NOMARCHIVE}.tar.gz ${NOMARCHIVE}/
+	rm -R ${NOMARCHIVE}
+
+
+.PHONY: all clean realclean test archive
+
