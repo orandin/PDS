@@ -1,5 +1,11 @@
 # mshell - a job manager
 
+
+TP=7
+NOM1=DELBERGHE
+
+NOMARCHIVE = TP${TP}_${NOM1}
+
 CC      = gcc
 CFLAGS  = -g
 CFLAGS += -Wall -Werror -ansi -pedantic
@@ -29,3 +35,9 @@ clean:
 
 realclean: clean
 	rm -f $(EXEC)
+
+archive: realclean
+	mkdir ${NOMARCHIVE} || true
+	cp ./* ${NOMARCHIVE}/ || true
+	tar -zcf ${NOMARCHIVE}.tar.gz ${NOMARCHIVE}/
+	rm -R ${NOMARCHIVE}
