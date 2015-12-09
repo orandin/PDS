@@ -10,17 +10,19 @@
 #include "rapide.h"
 #include "main.h"
 
-static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+unsigned int nb_threads_work;
+pile pile_th;
 
-unsigned long seuil_bloc_long = 1;
+unsigned long seuil_bloc_long = 512;
 
 base_t *tableau;
 
 #define min(a,b) (((a)<(b))?(a):(b))
 #define max(a,b) (((a)>(b))?(a):(b))
 
-/* Étape élémentaire du tri rapide : découpe le bloc b en 0, 1 ou 2 blocs
+/* Étape élémentaire du tri rapide : découpe le bloc b en 0, 1 ou 2 blocs
  * Dans le cas normal, découpe en 2 blocs, les éléments inférieurs au
  * pivot, et ceux supérieurs au pivot
  * Si un bloc contient moins de 1 élément, il n’est pas retourné
@@ -94,7 +96,7 @@ void rapide_seq(bloc_t bloc_init) {
     init_pile(&p);
     empile(&p, bloc_init);
 
-    /* Principe du tri rapide séquentiel :
+    /* Principe du tri rapide séquentiel :
      * tant qu’il y a des blocs à trier, dépile un bloc, le découpe en
      * (au maximum) deux sous-blocs non-encore triés et les empile */
     do {
@@ -105,13 +107,57 @@ void rapide_seq(bloc_t bloc_init) {
     } while (!pile_vide(&p));
 }
 
-void rapide(pos_t taille, unsigned int nb_threads) {
+
+void *wrapper(void *arg) {
+
+    int i, nb_blocs;
+    bloc_t blocs[2];
     bloc_t bloc;
 
-    pile p;
-    pthread_t *threads;
-    int i;
+    while(1) {
 
+        /* Début de la session critique */
+        pthread_mutex_lock(&mutex);
+
+        /* Tant que la pile est vide, on attend qu'un autre thread le remplisse. */        
+        while(pile_vide(&pile_th) && nb_threads_work > 1) {
+            nb_threads_work--;
+            pthread_cond_wait(&cond, &mutex);
+        }
+        
+        /* Si la pile est vide, on envoie un signal à tout le monde et on s'arrête. */
+        if(pile_vide(&pile_th)) {
+            pthread_cond_broadcast(&cond);
+            pthread_mutex_unlock(&mutex);
+            return NULL;
+        }
+        
+        bloc = depile(&pile_th);
+        pthread_mutex_unlock(&mutex);
+        /* Fin de la session critique */
+        
+        nb_blocs = rapide_decoupebloc(bloc, blocs);
+
+        /* Début de la session critique */
+        pthread_mutex_lock(&mutex);
+        
+        for(i = 0; i< nb_blocs; i++) {
+            if(blocs[i].fin - blocs[i].debut < seuil_bloc_long) {
+                rapide_seq(blocs[i]);
+                continue;
+            }
+            empile(&pile_th, blocs[i]);
+        }
+        pthread_mutex_unlock(&mutex);
+        /* Fin de la session critique */
+    }
+}
+
+
+void rapide(pos_t taille, unsigned int nb_threads) {
+    pthread_t *threads;
+    bloc_t bloc;
+    int i;
 
     bloc.debut = 0;
     bloc.fin   = taille - 1;
@@ -121,51 +167,22 @@ void rapide(pos_t taille, unsigned int nb_threads) {
         return;
     }
 
+
     assert(nb_threads > 1);
-    init_pile(&p);
-    empile(&p, bloc);
+    init_pile(&pile_th);
+    empile(&pile_th, bloc);
 
     threads = (pthread_t *) malloc(sizeof(pthread_t) * nb_threads);
-    for(i = 0; i < nb_threads; i++) {
-        pthread_create(&(threads[i]), NULL, wrapper, &p);
-    }
-    
+    assert(threads != NULL);
 
-    for(i = 0; i < nb_threads; i++){
-        pthread_join(threads[i], NULL);
+    for(i = 0; i < nb_threads; i++) {
+        nb_threads_work++;
+        assert(pthread_create(&threads[i], NULL, wrapper, NULL) == 0);
     }
+
+    for(i = 0; i < nb_threads; i++)
+        assert(pthread_join(threads[i], NULL) == 0);
 
     free(threads);
-
-    /*fprintf(stderr, "À implémenter !\n");
-
-    assert(0);*/
-}
-
-void *wrapper(void *arg) {
-    pile *pile = arg;
-    bloc_t bloc;
-    bloc_t bret[2];
-
-    /* Début de la session critique */
-    pthread_mutex_lock(&lock);
-
-
-
-    /* Tant que la pile est vide, on attend qu'un autre thread le remplisse. */
-    while(pile_vide(pile))
-        pthread_cond_wait(&cond, &lock);
-
-    bloc = depile(pile);
-    rapide_decoupebloc(bloc, bret);
-
-    empile(pile, bret[0]);
-    empile(pile, bret[1]);
-
-    /* On signale que l'on vient d'ajouter des éléments dans la pile */
-    pthread_cond_signal(&cond);
-    pthread_mutex_unlock(&lock);
-    /* Fin de la session critique */
-
-    return NULL;
+    return;
 }
